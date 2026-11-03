@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatTicket, parseReview, rejectedPatchPaths, unsafeModes } from '../lib/ticket.js';
+import { formatTicket, parseReview, rejectedPatchPaths, unsafeModes, findQaState, QA_STATE } from '../lib/ticket.js';
 
 test('formatea el ticket con título y descripción', () => {
   const text = formatTicket({ identifier: 'APP-1', title: 'Hacer algo', description: 'Criterios' });
@@ -54,4 +54,13 @@ test('rechaza enlaces simbólicos y submódulos', () => {
   assert.equal(unsafeModes(' create mode 120000 tests/link\n').length, 1);
   assert.equal(unsafeModes(' create mode 160000 tests/sub\n').length, 1);
   assert.equal(unsafeModes(' mode change 100644 => 120000 api/a.js\n').length, 1);
+});
+
+test('encuentra el estado de QA por nombre', () => {
+  const states = [{ id: '1', name: 'Todo' }, { id: '2', name: QA_STATE }];
+  assert.equal(findQaState(states)?.id, '2');
+});
+
+test('si el estado de QA no existe, lo indica para crearlo', () => {
+  assert.equal(findQaState([{ id: '1', name: 'Todo' }]), undefined);
 });
