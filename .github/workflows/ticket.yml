@@ -71,7 +71,10 @@ jobs:
         with:
           name: ticket
           path: ${{ runner.temp }}/datos
+      # El código que corre npm test no recibe credenciales de Claude.
       - uses: anthropics/claude-code-action@v1
+        env:
+          CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: '1'
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
@@ -214,12 +217,14 @@ jobs:
           git apply --index "$RUNNER_TEMP/datos/cambios.diff"
           git commit -m "$IDENTIFIER: $TITLE"
           git push origin "$branch"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           git checkout main
           url=$(gh pr create --base staging --head "$branch" --title "$IDENTIFIER: $TITLE" --body "Ticket $IDENTIFIER. Corrida: $RUN_URL")
           echo "url=$url" >> "$GITHUB_OUTPUT"
       - run: node scripts/report-result.mjs
         env:
           PR_URL: ${{ steps.pr.outputs.url }}
+          HEAD_SHA: ${{ steps.pr.outputs.sha }}
           REVIEW_FILE: ${{ runner.temp }}/datos/revision.json
 
   avisar:
