@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatTicket, parseReview, forbiddenPaths } from '../lib/ticket.js';
+import { formatTicket, parseReview, rejectedPatchPaths } from '../lib/ticket.js';
 
 test('formatea el ticket con título y descripción', () => {
   const text = formatTicket({ identifier: 'APP-1', title: 'Hacer algo', description: 'Criterios' });
@@ -31,13 +31,16 @@ test('ante duda, nunca es mergeable', () => {
   }
 });
 
-test('marca como prohibidos los workflows y archivos de secretos', () => {
-  assert.deepEqual(forbiddenPaths(['api/health.js', '.github/workflows/x.yml', '.env.local', 'scripts/a.mjs']), [
-    '.github/workflows/x.yml',
-    '.env.local',
-  ]);
+test('solo acepta cambios en api, lib, tests y docs', () => {
+  assert.deepEqual(rejectedPatchPaths(['api/health.js', 'lib/a.js', 'tests/a.test.js', 'docs/a.md']), []);
 });
 
-test('no marca archivos normales', () => {
-  assert.deepEqual(forbiddenPaths(['api/health.js', 'tests/health.test.js']), []);
+test('rechaza lo que corre con privilegios o define la ejecución', () => {
+  const bad = ['package.json', 'package-lock.json', 'scripts/x.mjs', '.github/workflows/x.yml', '.env', 'vercel.json', '.npmrc'];
+  assert.deepEqual(rejectedPatchPaths(bad), bad);
+});
+
+test('rechaza rutas engañosas', () => {
+  const bad = ['api/../scripts/x.mjs', 'tests/{a => ../../x}', '/etc/passwd'];
+  assert.deepEqual(rejectedPatchPaths(bad), bad);
 });
