@@ -181,6 +181,8 @@ jobs:
     needs: [iniciar, revisar]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      merged: ${{ steps.resultado.outputs.merged }}
     permissions:
       contents: write
       pull-requests: write
@@ -221,14 +223,58 @@ jobs:
           git checkout main
           url=$(gh pr create --base staging --head "$branch" --title "$IDENTIFIER: $TITLE" --body "Ticket $IDENTIFIER. Corrida: $RUN_URL")
           echo "url=$url" >> "$GITHUB_OUTPUT"
-      - run: node scripts/report-result.mjs
+      - id: resultado
+        run: node scripts/report-result.mjs
         env:
           PR_URL: ${{ steps.pr.outputs.url }}
           HEAD_SHA: ${{ steps.pr.outputs.sha }}
           REVIEW_FILE: ${{ runner.temp }}/datos/revision.json
 
+  # Solo sube staging a Vercel: no ejecuta código del proyecto en este runner.
+  desplegar:
+    needs: publicar
+    if: needs.publicar.outputs.merged == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+      VERCEL_ORG_ID: team_HRucOO1F81gIz4c0mk3coixu
+      VERCEL_PROJECT_ID: prj_E3PakOPHWC0qEfH4Nj3RXU4bms5g
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: staging
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          path: .confiable
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          rm -rf .confiable/.git
+          mv .confiable "$RUNNER_TEMP/confiable"
+          url=$(npx --yes vercel@50.32.5 deploy --yes --token "$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+      - name: Informar la URL para QA
+        env:
+          STAGING_URL: ${{ steps.vercel.outputs.url }}
+          ISSUE_ID: ${{ inputs.issue_id }}
+        run: |
+          cd "$RUNNER_TEMP/confiable"
+          node --input-type=module -e "
+          import { comment } from './scripts/linear-client.mjs';
+          await comment(process.env.ISSUE_ID, 'Staging desplegado para QA: ' + process.env.STAGING_URL);
+          "
+
   avisar:
-    needs: [iniciar, generar, verificar, revisar, publicar]
+    needs: [iniciar, generar, verificar, revisar, publicar, desplegar]
     if: failure() || needs.generar.outputs.changed == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 5

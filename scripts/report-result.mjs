@@ -1,5 +1,5 @@
 // Corre desde main. Si el revisor aprueba, fusiona hacia staging y pasa el ticket a QA. Nunca toca main.
-import { readFileSync } from 'node:fs';
+import { readFileSync, appendFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { comment, linear } from './linear-client.mjs';
 import { parseReview, findQaState, QA_STATE } from '../lib/ticket.js';
@@ -37,6 +37,7 @@ if (!review.mergeable) {
 } else {
   execFileSync('gh', ['pr', 'merge', PR_URL, '--squash', '--delete-branch', '--match-head-commit', HEAD_SHA], { stdio: 'inherit' });
   await moveToQa();
-  await comment(ISSUE_ID, `PR: ${PR_URL}\nRevisor: Mergeable. ${review.summary}\nFusionado a staging y listo para tu QA.\nCorrida: ${RUN_URL}`);
+  await comment(ISSUE_ID, `PR: ${PR_URL}\nRevisor: Mergeable. ${review.summary}\nFusionado a staging; falta su despliegue.\nCorrida: ${RUN_URL}`);
+  appendFileSync(process.env.GITHUB_OUTPUT, 'merged=true\n');
   console.log('Fusionado a staging');
 }
