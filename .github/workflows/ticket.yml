@@ -239,17 +239,17 @@ jobs:
     permissions:
       contents: read
     env:
-      LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
       VERCEL_ORG_ID: team_HRucOO1F81gIz4c0mk3coixu
       VERCEL_PROJECT_ID: prj_E3PakOPHWC0qEfH4Nj3RXU4bms5g
     steps:
       - uses: actions/checkout@v4
         with:
           ref: staging
+          path: staging-src
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
-          path: .confiable
+          path: confiable
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -258,16 +258,15 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          rm -rf .confiable/.git
-          mv .confiable "$RUNNER_TEMP/confiable"
-          url=$(npx --yes vercel@50.32.5 deploy --yes --token "$VERCEL_TOKEN")
+          cd confiable
+          url=$(NPM_CONFIG_USERCONFIG=/dev/null npm_config_registry=https://registry.npmjs.org/ npx --yes vercel@50.32.5 deploy --cwd "$GITHUB_WORKSPACE/staging-src" --yes --token "$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
       - name: Informar la URL para QA
         env:
           STAGING_URL: ${{ steps.vercel.outputs.url }}
-          ISSUE_ID: ${{ inputs.issue_id }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
         run: |
-          cd "$RUNNER_TEMP/confiable"
+          cd confiable
           node --input-type=module -e "
           import { comment } from './scripts/linear-client.mjs';
           await comment(process.env.ISSUE_ID, 'Staging desplegado para QA: ' + process.env.STAGING_URL);
