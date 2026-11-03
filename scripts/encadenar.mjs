@@ -4,7 +4,7 @@ import { comment, linear, projectStatus, removeProjectGo } from './linear-client
 import { canRun, parsePlan, summarize } from '../lib/proyecto.js';
 import { QA_STATE } from '../lib/ticket.js';
 
-const { PROJECT_ID, TICKETS_FILE, PLAN_FILE, GITHUB_REPOSITORY, GH_TOKEN, RUN_URL } = process.env;
+const { PROJECT_ID, TICKETS_FILE, PLAN_FILE, GITHUB_REPOSITORY, GH_TOKEN, RUN_URL, TRUSTED_REF } = process.env;
 const WORKFLOW = 'ticket.yml';
 const POLL_MS = 15_000;
 const MAX_WAIT_MS = 45 * 60_000;
@@ -25,7 +25,7 @@ async function runTicket(paso) {
   const desde = new Date(Date.now() - 60_000).toISOString();
   await github(`/actions/workflows/${WORKFLOW}/dispatches`, {
     method: 'POST',
-    body: JSON.stringify({ ref: 'main', inputs: { issue_id: paso.issueId, identifier: paso.identifier, model: paso.model } }),
+    body: JSON.stringify({ ref: TRUSTED_REF, inputs: { issue_id: paso.issueId, identifier: paso.identifier, model: paso.model } }),
   });
   const limite = Date.now() + MAX_WAIT_MS;
   while (Date.now() < limite) {

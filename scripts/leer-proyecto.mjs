@@ -1,12 +1,12 @@
 // Corre desde main. Rechaza proyectos no habilitados y deja los tickets pendientes como datos para el coordinador.
 import { appendFileSync, writeFileSync } from 'node:fs';
 import { linear, projectStatus, removeProjectGo } from './linear-client.mjs';
-import { ALLOWED_PROJECTS, pendingTickets } from '../lib/proyecto.js';
+import { enabledIn, pendingTickets } from '../lib/proyecto.js';
 
-const { PROJECT_ID, TICKETS_FILE, GITHUB_OUTPUT } = process.env;
+const { PROJECT_ID, TICKETS_FILE, GITHUB_OUTPUT, GITHUB_REPOSITORY } = process.env;
 const output = (name, value) => appendFileSync(GITHUB_OUTPUT, `${name}=${value}\n`);
 
-if (!ALLOWED_PROJECTS.includes(PROJECT_ID)) {
+if (!enabledIn(PROJECT_ID, GITHUB_REPOSITORY)) {
   await projectStatus(PROJECT_ID, 'La fábrica no está habilitada para este proyecto, así que no tomó ningún ticket.');
   await removeProjectGo(PROJECT_ID);
   output('permitido', 'false');
