@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatTicket, parseReview, rejectedPatchPaths, parseAllowedDirs, unsafeModes, findQaState, findWorkingState, QA_STATE } from '../lib/ticket.js';
+import { formatTicket, formatFailure, parseReview, rejectedPatchPaths, parseAllowedDirs, unsafeModes, findQaState, findWorkingState, QA_STATE } from '../lib/ticket.js';
 
 test('formatea el ticket con título y descripción', () => {
   const text = formatTicket({ identifier: 'APP-1', title: 'Hacer algo', description: 'Criterios' });
@@ -91,4 +91,20 @@ test('si In Progress no existe, usa otro estado iniciado que no sea QA', () => {
 
 test('al arrancar nunca elige QA, aunque sea el único estado iniciado', () => {
   assert.equal(findWorkingState([{ id: '1', name: QA_STATE }]), undefined);
+});
+
+test('el aviso de fallo incluye la explicación del generador', () => {
+  const texto = formatFailure({ motivo: '  Falta definir el enlace.\n', runUrl: 'https://x/1' });
+  assert.match(texto, /Falta definir el enlace\./);
+  assert.match(texto, /https:\/\/x\/1/);
+});
+
+test('sin explicación, el aviso solo apunta a la corrida', () => {
+  assert.equal(formatFailure({ motivo: '   ', runUrl: 'https://x/1' }), 'La fábrica no completó este ticket y no pasó a QA. Revisar la corrida: https://x/1');
+  assert.equal(formatFailure({ runUrl: 'https://x/1' }), 'La fábrica no completó este ticket y no pasó a QA. Revisar la corrida: https://x/1');
+});
+
+test('la explicación tiene un largo máximo', () => {
+  const texto = formatFailure({ motivo: 'a'.repeat(5000), runUrl: 'https://x/1' });
+  assert.ok(texto.length < 2200);
 });
