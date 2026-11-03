@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatTicket, parseReview, rejectedPatchPaths, unsafeModes, findQaState, QA_STATE } from '../lib/ticket.js';
+import { formatTicket, formatFailure, parseReview, rejectedPatchPaths, parseAllowedDirs, unsafeModes, findQaState, findWorkingState, QA_STATE } from '../lib/ticket.js';
 
 test('formatea el ticket con título y descripción', () => {
   const text = formatTicket({ identifier: 'APP-1', title: 'Hacer algo', description: 'Criterios' });
@@ -35,6 +35,20 @@ test('solo acepta cambios en api, lib, tests y docs', () => {
   assert.deepEqual(rejectedPatchPaths(['api/health.js', 'lib/a.js', 'tests/a.test.js', 'docs/a.md']), []);
 });
 
+test('cada proyecto define sus carpetas permitidas', () => {
+  const dirs = parseAllowedDirs('src, public,tests');
+  assert.deepEqual(rejectedPatchPaths(['src/pages/a.astro', 'public/a.js', 'tests/a.js'], dirs), []);
+  assert.deepEqual(rejectedPatchPaths(['api/a.js', 'package.json', 'src/../vercel.json'], dirs), ['api/a.js', 'package.json', 'src/../vercel.json']);
+});
+
+test('sin configuración quedan las carpetas de siempre', () => {
+  assert.deepEqual(parseAllowedDirs(undefined), ['api', 'lib', 'tests', 'docs']);
+});
+
+test('rechaza una configuración de carpetas peligrosa', () => {
+  for (const raw of ['.github', 'src,..', 'a/b', '.', 'scripts', '*']) assert.throws(() => parseAllowedDirs(raw));
+});
+
 test('rechaza lo que corre con privilegios o define la ejecución', () => {
   const bad = ['package.json', 'package-lock.json', 'scripts/x.mjs', '.github/workflows/x.yml', '.env', 'vercel.json', '.npmrc'];
   assert.deepEqual(rejectedPatchPaths(bad), bad);
@@ -63,4 +77,48 @@ test('encuentra el estado de QA por nombre', () => {
 
 test('si el estado de QA no existe, lo indica para crearlo', () => {
   assert.equal(findQaState([{ id: '1', name: 'Todo' }]), undefined);
+});
+
+test('al arrancar elige In Progress aunque QA aparezca primero', () => {
+  const states = [{ id: '1', name: QA_STATE }, { id: '2', name: 'In Progress' }];
+  assert.equal(findWorkingState(states)?.id, '2');
+});
+
+test('si In Progress no existe, usa otro estado iniciado que no sea QA', () => {
+  const states = [{ id: '1', name: QA_STATE }, { id: '2', name: 'En curso' }];
+  assert.equal(findWorkingState(states)?.id, '2');
+});
+
+test('al arrancar nunca elige QA, aunque sea el único estado iniciado', () => {
+  assert.equal(findWorkingState([{ id: '1', name: QA_STATE }]), undefined);
+});
+
+test('el aviso de fallo incluye la explicación del generador', () => {
+  const texto = formatFailure({ motivo: '  Falta definir el enlace.\n', runUrl: 'https://x/1' });
+  assert.match(texto, /Falta definir el enlace\./);
+  assert.match(texto, /https:\/\/x\/1/);
+});
+
+test('sin explicación, el aviso solo apunta a la corrida', () => {
+  assert.equal(formatFailure({ motivo: '   ', runUrl: 'https://x/1' }), 'La fábrica no completó este ticket y no pasó a QA. Revisar la corrida: https://x/1');
+  assert.equal(formatFailure({ runUrl: 'https://x/1' }), 'La fábrica no completó este ticket y no pasó a QA. Revisar la corrida: https://x/1');
+});
+
+test('la explicación tiene un largo máximo', () => {
+  const texto = formatFailure({ motivo: 'a'.repeat(5000), runUrl: 'https://x/1' });
+  assert.ok(texto.length < 2200);
+});
+
+test('la explicación no publica credenciales', () => {
+  const texto = formatFailure({
+    motivo: 'a sk-ant-oat01-abcDEF123456789012 b ghp_abcdefghijklmnopqrstuvwxyz0123 c lin_api_abcdefghijklmnopqrstuv d ' + 'Q'.repeat(50),
+    runUrl: 'https://x/1',
+  });
+  for (const fuga of ['sk-ant', 'ghp_', 'lin_api_', 'QQQQQQQQQQ']) assert.equal(texto.includes(fuga), false);
+  assert.match(texto, /\[oculto\]/);
+});
+
+test('la explicación no trae enlaces ni imágenes que salgan a otro sitio', () => {
+  const texto = formatFailure({ motivo: 'ver ![x](https://malo.example/a?d=1) y [aqui](https://malo.example/b) o https://malo.example/c', runUrl: 'https://x/1' });
+  assert.equal(texto.includes('malo.example'), false);
 });

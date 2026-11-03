@@ -1,0 +1,26 @@
+name: Proyecto de la fábrica
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_id:
+        description: ID del proyecto en Linear
+        required: true
+
+# Un solo proyecto encadenando a la vez. Cada ticket usa además su propia cola.
+concurrency:
+  group: fabrica-proyecto
+
+permissions: {}
+
+jobs:
+  motor:
+    permissions:
+      contents: read
+      actions: write
+    uses: dario-kreante/fabrica/.github/workflows/motor-proyecto.yml@main
+    secrets: inherit
+    with:
+      project_id: ${{ inputs.project_id }}
+      trusted_ref: main
+      allowed_dirs: api,lib,tests,docs

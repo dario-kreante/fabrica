@@ -1,4 +1,6 @@
 // Primera prueba del ciclo: GitHub Actions pasa el ticket a En curso y lo informa en Linear.
+import { findWorkingState } from '../lib/ticket.js';
+
 const { LINEAR_API_KEY, ISSUE_ID, IDENTIFIER, RUN_URL } = process.env;
 
 async function linear(query, variables) {
@@ -13,11 +15,11 @@ async function linear(query, variables) {
 }
 
 const { issue } = await linear(
-  `query($id: String!) { issue(id: $id) { team { states(filter: { type: { eq: "started" } }) { nodes { id } } } } }`,
+  `query($id: String!) { issue(id: $id) { team { states(filter: { type: { eq: "started" } }) { nodes { id name } } } } }`,
   { id: ISSUE_ID },
 );
-const stateId = issue.team.states.nodes[0]?.id;
-if (!stateId) throw new Error('El equipo no tiene un estado de tipo started');
+const stateId = findWorkingState(issue.team.states.nodes)?.id;
+if (!stateId) throw new Error('El equipo no tiene un estado de trabajo de tipo started');
 
 await linear(
   `mutation($id: String!, $stateId: String!) { issueUpdate(id: $id, input: { stateId: $stateId }) { success } }`,
