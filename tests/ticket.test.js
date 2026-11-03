@@ -108,3 +108,17 @@ test('la explicación tiene un largo máximo', () => {
   const texto = formatFailure({ motivo: 'a'.repeat(5000), runUrl: 'https://x/1' });
   assert.ok(texto.length < 2200);
 });
+
+test('la explicación no publica credenciales', () => {
+  const texto = formatFailure({
+    motivo: 'a sk-ant-oat01-abcDEF123456789012 b ghp_abcdefghijklmnopqrstuvwxyz0123 c lin_api_abcdefghijklmnopqrstuv d ' + 'Q'.repeat(50),
+    runUrl: 'https://x/1',
+  });
+  for (const fuga of ['sk-ant', 'ghp_', 'lin_api_', 'QQQQQQQQQQ']) assert.equal(texto.includes(fuga), false);
+  assert.match(texto, /\[oculto\]/);
+});
+
+test('la explicación no trae enlaces ni imágenes que salgan a otro sitio', () => {
+  const texto = formatFailure({ motivo: 'ver ![x](https://malo.example/a?d=1) y [aqui](https://malo.example/b) o https://malo.example/c', runUrl: 'https://x/1' });
+  assert.equal(texto.includes('malo.example'), false);
+});

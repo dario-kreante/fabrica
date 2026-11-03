@@ -379,3 +379,4 @@ jobs:
       - run: node scripts/avisar.mjs
         env:
           MOTIVO_FILE: ${{ runner.temp }}/datos/motivo.txt
+          CHANGED: ${{ needs.generar.outputs.changed }}
