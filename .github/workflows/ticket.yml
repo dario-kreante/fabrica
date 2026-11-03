@@ -1,0 +1,35 @@
+name: Ticket de la fábrica
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_id:
+        description: ID del ticket en Linear
+        required: true
+      identifier:
+        description: Identificador visible, por ejemplo APP-1
+        required: true
+
+concurrency:
+  group: fabrica-${{ inputs.identifier }}
+
+permissions:
+  contents: read
+
+jobs:
+  recibir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+      - name: Informar en Linear
+        run: node scripts/report-to-linear.mjs
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          ISSUE_ID: ${{ inputs.issue_id }}
+          IDENTIFIER: ${{ inputs.identifier }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
