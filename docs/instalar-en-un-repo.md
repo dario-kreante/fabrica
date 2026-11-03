@@ -16,6 +16,7 @@ La fábrica lleva tickets de Linear hasta staging. Publicar a producción queda 
 | `allowed_dirs` | Carpetas que el generador puede cambiar. Nunca incluir lo que define la ejecución, como `.github`, `scripts` o `package.json` |
 | `vercel_project_id` | Proyecto donde se despliega staging |
 | `staging_alias` | Dominio fijo de staging |
+| `generator_setup` | Instalación antes del generador, sin ejecutar código: `npm ci --ignore-scripts` |
 | `setup`, `verify` | Instalación y verificación completa, sin secretos |
 | `generator_tests`, `generator_bash` | Lo que el generador puede ejecutar |
 

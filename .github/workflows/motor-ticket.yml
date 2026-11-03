@@ -35,8 +35,12 @@ on:
       node_version:
         type: string
         default: '22'
+      generator_setup:
+        description: Instalación antes del generador. Comparte máquina con el token de Claude, así que no debe ejecutar código, por ejemplo npm ci --ignore-scripts
+        type: string
+        default: ''
       setup:
-        description: Comando previo a trabajar y verificar, por ejemplo npm ci
+        description: Instalación completa antes de verificar, sin secretos, por ejemplo npm ci
         type: string
         default: ''
       generator_tests:
@@ -109,8 +113,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node_version }}
-      - if: inputs.setup != ''
-        run: ${{ inputs.setup }}
+      - if: inputs.generator_setup != ''
+        run: ${{ inputs.generator_setup }}
       - uses: actions/download-artifact@v4
         with:
           name: ticket
