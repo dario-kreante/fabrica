@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatTicket, parseReview, rejectedPatchPaths, unsafeModes, findQaState, QA_STATE } from '../lib/ticket.js';
+import { formatTicket, parseReview, rejectedPatchPaths, unsafeModes, findQaState, findWorkingState, QA_STATE } from '../lib/ticket.js';
 
 test('formatea el ticket con título y descripción', () => {
   const text = formatTicket({ identifier: 'APP-1', title: 'Hacer algo', description: 'Criterios' });
@@ -63,4 +63,18 @@ test('encuentra el estado de QA por nombre', () => {
 
 test('si el estado de QA no existe, lo indica para crearlo', () => {
   assert.equal(findQaState([{ id: '1', name: 'Todo' }]), undefined);
+});
+
+test('al arrancar elige In Progress aunque QA aparezca primero', () => {
+  const states = [{ id: '1', name: QA_STATE }, { id: '2', name: 'In Progress' }];
+  assert.equal(findWorkingState(states)?.id, '2');
+});
+
+test('si In Progress no existe, usa otro estado iniciado que no sea QA', () => {
+  const states = [{ id: '1', name: QA_STATE }, { id: '2', name: 'En curso' }];
+  assert.equal(findWorkingState(states)?.id, '2');
+});
+
+test('al arrancar nunca elige QA, aunque sea el único estado iniciado', () => {
+  assert.equal(findWorkingState([{ id: '1', name: QA_STATE }]), undefined);
 });
