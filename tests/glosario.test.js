@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 const doc = readFileSync(new URL('../docs/glosario.md', import.meta.url), 'utf8');
 const lines = doc.split('\n');
 
-for (const termino of ['generador', 'revisor', 'coordinador', 'qa staging']) {
+for (const termino of ['generador', 'revisor', 'coordinador', 'qa staging', 'puente']) {
   test(`docs/glosario.md define ${termino} en una línea`, () => {
     assert.ok(lines.some((l) => l.toLowerCase().includes(termino)));
   });
