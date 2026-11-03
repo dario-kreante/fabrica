@@ -58,7 +58,7 @@ on:
       verify_summary:
         description: Resumen para el generador de lo que corre la verificación
         type: string
-        default: npm test
+        default: todas las pruebas del proyecto y su build
 
 permissions: {}
 
