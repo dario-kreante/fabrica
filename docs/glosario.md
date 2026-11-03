@@ -5,3 +5,4 @@
 - Coordinador: parte que orquesta el flujo, asignando el ticket al generador y al revisor y cerrando el ciclo.
 - QA staging: revisión de Darío sobre lo ya desplegado en staging.
 - Puente: componente que recibe el aviso de Linear, verifica su firma y lanza el flujo en GitHub.
+- Motor: flujo reutilizable que cada repo llama con su configuración.
