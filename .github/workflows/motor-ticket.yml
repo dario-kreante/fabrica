@@ -55,6 +55,10 @@ on:
         description: Verificación completa del parche, sin secretos
         type: string
         default: npm test
+      verify_summary:
+        description: Resumen para el generador de lo que corre la verificación
+        type: string
+        default: npm test
 
 permissions: {}
 
@@ -135,7 +139,8 @@ jobs:
             Las pruebas deben fallar si el comportamiento pedido se rompe: no basta con buscar una palabra en un archivo.
             Corre ${{ inputs.generator_tests }} antes de terminar. Solo puedes cambiar archivos en estas carpetas: ${{ inputs.allowed_dirs }}.
             No hagas commits: el workflow se encarga de eso.
-            Si los criterios son ambiguos o no se pueden cumplir, no cambies nada y explica por qué.
+            Después de ti, un paso aparte corre la verificación completa, también pruebas que aquí no puedes ejecutar: ${{ inputs.verify_summary }}. Escribe esas pruebas igual; no te detengas porque no puedas correrlas.
+            Si los criterios son ambiguos o no se pueden cumplir, no cambies nada y escribe por qué, en español y en pocas líneas, en ${{ runner.temp }}/datos/motivo.txt.
           claude_args: >-
             --model ${{ inputs.model }}
             --max-turns 40
@@ -150,6 +155,11 @@ jobs:
         with:
           name: parche
           path: ${{ runner.temp }}/cambios.diff
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: motivo
+          path: ${{ runner.temp }}/datos/motivo.txt
           if-no-files-found: ignore
 
   # Valida con los scripts de la fábrica y corre la verificación del parche sin ningún secreto.
@@ -361,8 +371,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: |
-          node --input-type=module -e "
-          import { comment } from './scripts/linear-client.mjs';
-          await comment(process.env.ISSUE_ID, 'La fábrica no completó este ticket y no pasó a QA. Revisar la corrida: ' + process.env.RUN_URL);
-          "
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: motivo
+          path: ${{ runner.temp }}/datos
+      - run: node scripts/avisar.mjs
+        env:
+          MOTIVO_FILE: ${{ runner.temp }}/datos/motivo.txt
