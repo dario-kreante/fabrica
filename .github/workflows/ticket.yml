@@ -189,6 +189,9 @@ jobs:
         with:
           name: revision
           path: ${{ runner.temp }}/datos
+      - run: node scripts/check-patch.mjs
+        env:
+          PATCH_FILE: ${{ runner.temp }}/datos/cambios.diff
       - id: pr
         env:
           TITLE: ${{ needs.iniciar.outputs.title }}

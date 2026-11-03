@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatTicket, parseReview, rejectedPatchPaths } from '../lib/ticket.js';
+import { formatTicket, parseReview, rejectedPatchPaths, unsafeModes } from '../lib/ticket.js';
 
 test('formatea el ticket con título y descripción', () => {
   const text = formatTicket({ identifier: 'APP-1', title: 'Hacer algo', description: 'Criterios' });
@@ -43,4 +43,15 @@ test('rechaza lo que corre con privilegios o define la ejecución', () => {
 test('rechaza rutas engañosas', () => {
   const bad = ['api/../scripts/x.mjs', 'tests/{a => ../../x}', '/etc/passwd'];
   assert.deepEqual(rejectedPatchPaths(bad), bad);
+});
+
+test('acepta archivos normales y ejecutables en el resumen del parche', () => {
+  assert.deepEqual(unsafeModes(' create mode 100644 api/a.js\n create mode 100755 api/b.sh\n delete mode 100644 api/c.js\n'), []);
+  assert.deepEqual(unsafeModes(' mode change 100644 => 100755 api/a.js\n'), []);
+});
+
+test('rechaza enlaces simbólicos y submódulos', () => {
+  assert.equal(unsafeModes(' create mode 120000 tests/link\n').length, 1);
+  assert.equal(unsafeModes(' create mode 160000 tests/sub\n').length, 1);
+  assert.equal(unsafeModes(' mode change 100644 => 120000 api/a.js\n').length, 1);
 });
