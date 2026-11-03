@@ -261,16 +261,11 @@ jobs:
           cd confiable
           url=$(NPM_CONFIG_USERCONFIG=/dev/null npm_config_registry=https://registry.npmjs.org/ npx --yes vercel@50.32.5 deploy --cwd "$GITHUB_WORKSPACE/staging-src" --yes --token "$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
-      - name: Informar la URL para QA
+      - name: Pasar a QA e informar la URL
         env:
           STAGING_URL: ${{ steps.vercel.outputs.url }}
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
-        run: |
-          cd confiable
-          node --input-type=module -e "
-          import { comment } from './scripts/linear-client.mjs';
-          await comment(process.env.ISSUE_ID, 'Staging desplegado para QA: ' + process.env.STAGING_URL);
-          "
+        run: node confiable/scripts/mark-qa.mjs
 
   avisar:
     needs: [iniciar, generar, verificar, revisar, publicar, desplegar]
@@ -291,5 +286,5 @@ jobs:
       - run: |
           node --input-type=module -e "
           import { comment } from './scripts/linear-client.mjs';
-          await comment(process.env.ISSUE_ID, 'La fábrica no dejó un PR para este ticket. Revisar la corrida: ' + process.env.RUN_URL);
+          await comment(process.env.ISSUE_ID, 'La fábrica no completó este ticket y no pasó a QA. Revisar la corrida: ' + process.env.RUN_URL);
           "
