@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatTicket, parseReview, rejectedPatchPaths, unsafeModes, findQaState, findWorkingState, QA_STATE } from '../lib/ticket.js';
+import { formatTicket, parseReview, rejectedPatchPaths, parseAllowedDirs, unsafeModes, findQaState, findWorkingState, QA_STATE } from '../lib/ticket.js';
 
 test('formatea el ticket con título y descripción', () => {
   const text = formatTicket({ identifier: 'APP-1', title: 'Hacer algo', description: 'Criterios' });
@@ -33,6 +33,20 @@ test('ante duda, nunca es mergeable', () => {
 
 test('solo acepta cambios en api, lib, tests y docs', () => {
   assert.deepEqual(rejectedPatchPaths(['api/health.js', 'lib/a.js', 'tests/a.test.js', 'docs/a.md']), []);
+});
+
+test('cada proyecto define sus carpetas permitidas', () => {
+  const dirs = parseAllowedDirs('src, public,tests');
+  assert.deepEqual(rejectedPatchPaths(['src/pages/a.astro', 'public/a.js', 'tests/a.js'], dirs), []);
+  assert.deepEqual(rejectedPatchPaths(['api/a.js', 'package.json', 'src/../vercel.json'], dirs), ['api/a.js', 'package.json', 'src/../vercel.json']);
+});
+
+test('sin configuración quedan las carpetas de siempre', () => {
+  assert.deepEqual(parseAllowedDirs(undefined), ['api', 'lib', 'tests', 'docs']);
+});
+
+test('rechaza una configuración de carpetas peligrosa', () => {
+  for (const raw of ['.github', 'src,..', 'a/b', '.', 'scripts', '*']) assert.throws(() => parseAllowedDirs(raw));
 });
 
 test('rechaza lo que corre con privilegios o define la ejecución', () => {

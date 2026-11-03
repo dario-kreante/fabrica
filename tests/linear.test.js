@@ -74,3 +74,9 @@ test('rechaza datos con forma inesperada antes de pasarlos a GitHub', () => {
   const badKey = { ...issue().data, identifier: '$(whoami)' };
   assert.equal(dispatchTarget(issue({ data: badKey })), null);
 });
+
+test('informa el proyecto del ticket solo si tiene formato válido', () => {
+  const con = { ...issue().data, projectId: ID };
+  assert.equal(dispatchTarget(issue({ data: con })).projectId, ID);
+  assert.equal(dispatchTarget(issue({ data: { ...con, projectId: 'x y' } })).projectId, undefined);
+});

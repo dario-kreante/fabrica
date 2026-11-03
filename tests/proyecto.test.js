@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   PROJECT_GO_LABEL_ID,
-  ALLOWED_PROJECTS,
+  PROJECTS,
+  enabledIn,
   projectDispatchTarget,
   pendingTickets,
   parsePlan,
@@ -44,8 +45,8 @@ test('ignora otros tipos de evento e ID con formato inválido', () => {
 });
 
 test('el proyecto real con tickets de otros repos no está habilitado', () => {
-  assert.ok(ALLOWED_PROJECTS.includes(PROJECT_ID));
-  assert.equal(ALLOWED_PROJECTS.includes('0a85dea0-373d-45b0-ae99-33cc81f99a2e'), false);
+  assert.equal(enabledIn(PROJECT_ID, 'dario-kreante/fabrica'), true);
+  assert.equal(enabledIn('0a85dea0-373d-45b0-ae99-33cc81f99a2e', 'dario-kreante/fabrica'), false);
 });
 
 const nodo = (identifier, type, blockers = []) => ({
@@ -130,4 +131,11 @@ test('el resumen separa lo que espera QA de lo que necesita atención', () => {
   assert.match(text, /APP-2/);
   assert.match(text, /APP-3/);
   assert.match(text, /APP-4.*Ambiguo/s);
+});
+
+test('un proyecto solo corre en el repo que le corresponde', () => {
+  const web = Object.keys(PROJECTS).find((id) => PROJECTS[id].repo === 'dario-kreante/apps-del-sur-web');
+  assert.equal(enabledIn(web, 'dario-kreante/apps-del-sur-web'), true);
+  assert.equal(enabledIn(web, 'dario-kreante/fabrica'), false);
+  assert.equal(enabledIn(PROJECT_ID, 'dario-kreante/apps-del-sur-web'), false);
 });
