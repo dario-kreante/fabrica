@@ -103,8 +103,6 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      TICKETS_FILE: ${{ runner.temp }}/datos/tickets.json
-      PLAN_FILE: ${{ runner.temp }}/datos/plan.json
     steps:
       - uses: actions/checkout@v4
         with:
@@ -123,3 +121,6 @@ jobs:
           name: plan
           path: ${{ runner.temp }}/datos
       - run: node scripts/encadenar.mjs
+        env:
+          TICKETS_FILE: ${{ runner.temp }}/datos/tickets.json
+          PLAN_FILE: ${{ runner.temp }}/datos/plan.json
