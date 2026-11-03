@@ -6,3 +6,4 @@
 - QA staging: revisión de Darío sobre lo ya desplegado en staging.
 - Puente: componente que recibe el aviso de Linear, verifica su firma y lanza el flujo en GitHub.
 - Motor: flujo reutilizable que cada repo llama con su configuración.
+- Sincronizar: traer la rama de confianza a staging antes de cada ticket.
