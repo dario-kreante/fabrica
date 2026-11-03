@@ -31,4 +31,5 @@ La fábrica lleva tickets de Linear hasta staging. Publicar a producción queda 
 
 - **Un ticket:** etiqueta `fabrica:go` en el ticket, que debe pertenecer a un proyecto habilitado.
 - **Un proyecto completo:** etiqueta de proyecto `fabrica:go`. El coordinador ordena los pendientes y omite lo ambiguo.
+- **Antes de cada ticket:** la fábrica trae la rama de confianza a `staging`. Si hay conflicto, no empieza el ticket y avisa en Linear; se resuelve a mano.
 - **Tu parte:** revisar lo que llega a QA staging. Lo que falla vuelve como comentario o ticket nuevo.

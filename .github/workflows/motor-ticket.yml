@@ -100,9 +100,37 @@ jobs:
           name: ticket
           path: ${{ runner.temp }}/ticket.md
 
+  # Trae la rama de confianza a staging antes de generar. No ejecuta código del proyecto y no recibe secretos.
+  sincronizar:
+    needs: iniciar
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      estado: ${{ steps.traer.outputs.estado }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: staging
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          repository: dario-kreante/fabrica
+          ref: main
+          path: .fabrica
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: traer
+        run: node .fabrica/scripts/sincronizar.mjs
+        env:
+          TRUSTED_REF: ${{ inputs.trusted_ref }}
+
   # El agente trabaja sin escritura en GitHub, sin credenciales de git y sin la clave de Linear.
   generar:
-    needs: iniciar
+    needs: sincronizar
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
@@ -246,7 +274,7 @@ jobs:
           path: ${{ runner.temp }}/datos/revision.json
           if-no-files-found: ignore
 
-  # Único trabajo con escritura. Ejecuta scripts de la fábrica y nunca código del parche.
+  # Único trabajo que publica el parche. Ejecuta scripts de la fábrica y nunca código del parche.
   publicar:
     needs: [iniciar, revisar]
     runs-on: ubuntu-latest
@@ -354,7 +382,7 @@ jobs:
         run: node confiable/scripts/mark-qa.mjs
 
   avisar:
-    needs: [iniciar, generar, verificar, revisar, publicar, desplegar]
+    needs: [iniciar, sincronizar, generar, verificar, revisar, publicar, desplegar]
     if: failure() || needs.generar.outputs.changed == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -380,3 +408,5 @@ jobs:
         env:
           MOTIVO_FILE: ${{ runner.temp }}/datos/motivo.txt
           CHANGED: ${{ needs.generar.outputs.changed }}
+          SYNC: ${{ needs.sincronizar.outputs.estado }}
+          TRUSTED_REF: ${{ inputs.trusted_ref }}
