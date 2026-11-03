@@ -1,4 +1,5 @@
 name: Ticket de la fábrica
+run-name: ${{ inputs.identifier }}
 
 on:
   workflow_dispatch:
@@ -9,6 +10,13 @@ on:
       identifier:
         description: Identificador visible, por ejemplo APP-1
         required: true
+      model:
+        description: Modelo del generador
+        type: choice
+        default: claude-sonnet-5-5
+        options:
+          - claude-sonnet-5-5
+          - claude-haiku-5-5
 
 # Un solo ticket escribiendo a la vez en este repo.
 concurrency:
@@ -86,7 +94,7 @@ jobs:
             No hagas commits: el workflow se encarga de eso.
             Si los criterios son ambiguos o no se pueden cumplir, no cambies nada y explica por qué.
           claude_args: >-
-            --model claude-sonnet-5-5
+            --model ${{ inputs.model }}
             --max-turns 30
             --add-dir ${{ runner.temp }}/datos
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(npm test)"
