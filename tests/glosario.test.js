@@ -11,6 +11,13 @@ for (const termino of ['generador', 'revisor', 'coordinador', 'qa staging', 'pue
   });
 }
 
+test('docs/glosario.md define sincronizar como traer la rama de confianza a staging antes de cada ticket', () => {
+  const linea = lines.find((l) => /^- Sincronizar:/i.test(l));
+  assert.ok(linea, 'falta la línea "- Sincronizar: ..."');
+  assert.match(linea.toLowerCase(), /traer la rama de confianza a staging/);
+  assert.match(linea.toLowerCase(), /antes de cada ticket/);
+});
+
 test('docs/glosario.md define motor como el flujo reutilizable que cada repo llama con su configuración', () => {
   const linea = lines.find((l) => /^- Motor:/i.test(l));
   assert.ok(linea, 'falta la línea "- Motor: ..."');
